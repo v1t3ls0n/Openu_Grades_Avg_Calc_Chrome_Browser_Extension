@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Open University Grades Calculator",
+  "version": "1.0",
+  "description": "Calculate average grades for Open University students.",
+  "permissions": ["scripting", "storage", "tabs"],
+  "host_permissions": ["https://sheilta.apps.openu.ac.il/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Open University Grades Calculator"
+  },
+"web_accessible_resources": [
+  {
+    "resources": ["calculator.html", "calculator.js"],
+    "matches": ["<all_urls>"]
+  }
+],
+  "content_security_policy": {
+  "extension_pages": "script-src 'self'; object-src 'self'"
+} 
+}
