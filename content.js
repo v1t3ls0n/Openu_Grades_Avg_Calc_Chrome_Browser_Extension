@@ -112,7 +112,10 @@ async function mainFunction() {
   for await (const [index, course] of studentCoursesDataObj.entries()) {
     try {
       const creditPoints = await fetchCourseData(course.course_url_link);
-      if (!studentCoursesDataObj[index].nakaz) {
+      if (
+        !studentCoursesDataObj[index].nakaz &&
+        studentCoursesDataObj[index].status != "עובר בינארי"
+      ) {
         studentCoursesDataObj[index].grade = -1;
         studentCoursesDataObj[index].creditPoints = creditPoints;
         studentCoursesDataObj[index].nakaz = creditPoints;
