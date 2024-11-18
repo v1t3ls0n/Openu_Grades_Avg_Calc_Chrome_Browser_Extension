@@ -116,7 +116,7 @@ async function mainFunction() {
         !studentCoursesDataObj[index].nakaz &&
         studentCoursesDataObj[index].status != "עובר בינארי"
       ) {
-        studentCoursesDataObj[index].grade = -1;
+        studentCoursesDataObj[index].grade = 100;
         studentCoursesDataObj[index].creditPoints = creditPoints;
         studentCoursesDataObj[index].nakaz = creditPoints;
       }
