@@ -1,6 +1,28 @@
 // content.js
 
-(function () {
+async function fetchCourseData(course_url_link) {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage(
+      { action: "fetchData", url: course_url_link },
+      (response) => {
+        console.log({ response });
+        if (chrome.runtime.lastError) {
+          console.error(
+            "Error communicating with background:",
+            chrome.runtime.lastError.message
+          );
+          reject("Error communicating with background");
+        } else if (response && response.success) {
+          resolve(response.creditPoints);
+        } else {
+          reject("Failed to fetch course data");
+        }
+      }
+    );
+  });
+}
+
+(async function () {
   console.log("content.js is running");
 
   if (
@@ -9,7 +31,7 @@
     )
   ) {
     console.log("Extension: On the correct page.");
-    waitForCourseDataAndRun();
+    await waitForCourseDataAndRun();
   } else {
     alert(
       "Please log in to your Open University account, then re-run the extension."
@@ -17,9 +39,9 @@
   }
 })();
 
-function waitForCourseDataAndRun() {
+async function waitForCourseDataAndRun() {
   console.log("Extension: Waiting for course data...");
-  const observer = new MutationObserver((mutationsList, observer) => {
+  const observer = new MutationObserver(async (mutationsList, observer) => {
     const rows = document.querySelectorAll(".content_tbl > tbody > tr");
     if (rows.length > 0) {
       console.log("Extension: Course data detected.");
@@ -31,7 +53,7 @@ function waitForCourseDataAndRun() {
   observer.observe(document.body, { childList: true, subtree: true });
 }
 
-function mainFunction() {
+async function mainFunction() {
   console.log("Extension: mainFunction started.");
   const rows = document.querySelectorAll(".content_tbl > tbody > tr");
   console.log("Extension: Rows found:", rows.length);
@@ -45,7 +67,7 @@ function mainFunction() {
   const successStatuses = ["עבר", "הצלחה"];
   const inProgressStatuses = ["נרשם", "בלימוד"];
 
-  const studentCoursesDataObj = Array.from(rows)
+  let studentCoursesDataObj = Array.from(rows)
     .filter((tr) => {
       // Ensure the row has enough cells
       if (tr.children.length > 9) {
@@ -59,14 +81,25 @@ function mainFunction() {
       return false;
     })
     .map((tr) => {
+      let course_url_link = tr.children[8].children[0].children[0].href;
       let status = tr.children[3].innerText.trim(); // סטטוס
       let nakaz = status === "עבר" ? 0 : tr.children[2].innerText.trim(); // נקודות זכות
       let grade = status === "עבר" ? 1 : tr.children[4].innerText.trim(); // ציון סופי
       let course = tr.children[7].innerText.trim(); // שם קורס
       let courseId = tr.children[8].innerText.trim(); // מספר קורס
       let semester = tr.children[9].innerText.trim(); // סמסטר
+      let creditPoints = nakaz != 0 ? nakaz : undefined;
       status = status === "עבר" ? "עובר בינארי" : status;
-      return { nakaz, status, grade, course, courseId, semester };
+      return {
+        nakaz,
+        status,
+        grade,
+        course,
+        courseId,
+        semester,
+        course_url_link,
+        creditPoints,
+      };
     })
     .sort((a, b) => b.grade - a.grade);
 
@@ -77,11 +110,25 @@ function mainFunction() {
     return;
   }
 
+  for await (const [index, course] of studentCoursesDataObj.entries()) {
+    try {
+      console.log({ course });
+
+      const creditPoints = await fetchCourseData(course.course_url_link);
+      if (!studentCoursesDataObj[index].nakaz) {
+        studentCoursesDataObj[index].grade = -1;
+        studentCoursesDataObj[index].creditPoints = creditPoints;
+        studentCoursesDataObj[index].nakaz = creditPoints;
+      }
+    } catch (error) {
+      console.error("Error fetching course URL:", course_url_link, error);
+    }
+  }
   // Inject the calculator into the page
-  injectCalculator(studentCoursesDataObj);
+  await injectCalculator(studentCoursesDataObj);
 }
 
-function injectCalculator(courseData) {
+async function injectCalculator(courseData) {
   try {
     console.log("Attempting to inject calculator iframe.");
 

@@ -1,6 +1,44 @@
 const OPENU_MY_COURSES_URL =
   "https://sheilta.apps.openu.ac.il/pls/dmyopt2/course_info.courses";
 
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === "fetchData" && message.url) {
+    console.log("Fetching data from:", message.url);
+
+    fetch(message.url)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.arrayBuffer(); // Get the response as an ArrayBuffer
+      })
+      .then((buffer) => {
+        // Use TextDecoder to decode the buffer
+        const decoder = new TextDecoder("windows-1255"); // Use "utf-8" or another encoding like "windows-1255"
+        const decodedText = decoder.decode(buffer);
+
+        // Extract "נקודות זכות" using regex
+        const creditPoints =
+          parseInt(
+            decodedText.match(/\d+ נקודות זכות/)?.[0].match(/\d+/)?.[0],
+            10
+          ) || null;
+
+        sendResponse({ success: true, creditPoints, decodedText });
+      })
+      .catch((error) => {
+        console.error("Fetch or decoding error:", error);
+        sendResponse({
+          success: false,
+          error: error.message,
+          decodedText,
+        });
+      });
+
+    return true; // Keeps the message channel open for async response
+  }
+});
+
 chrome.action.onClicked.addListener((tab) => {
   chrome.tabs.update(tab.id, { url: OPENU_MY_COURSES_URL });
 
