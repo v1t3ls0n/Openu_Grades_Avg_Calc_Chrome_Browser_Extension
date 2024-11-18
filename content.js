@@ -5,7 +5,6 @@ async function fetchCourseData(course_url_link) {
     chrome.runtime.sendMessage(
       { action: "fetchData", url: course_url_link },
       (response) => {
-        console.log({ response });
         if (chrome.runtime.lastError) {
           console.error(
             "Error communicating with background:",
@@ -112,8 +111,6 @@ async function mainFunction() {
 
   for await (const [index, course] of studentCoursesDataObj.entries()) {
     try {
-      console.log({ course });
-
       const creditPoints = await fetchCourseData(course.course_url_link);
       if (!studentCoursesDataObj[index].nakaz) {
         studentCoursesDataObj[index].grade = -1;

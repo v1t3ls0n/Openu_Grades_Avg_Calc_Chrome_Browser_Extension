@@ -24,14 +24,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             10
           ) || null;
 
-        sendResponse({ success: true, creditPoints, decodedText });
+        sendResponse({ success: true, creditPoints });
       })
       .catch((error) => {
         console.error("Fetch or decoding error:", error);
         sendResponse({
           success: false,
           error: error.message,
-          decodedText,
         });
       });
 
